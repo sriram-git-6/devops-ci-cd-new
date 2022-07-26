@@ -1,0 +1,46 @@
+git-->jenkins-->sending files over ssh to ansible server--->ansible builds images and pushes to docker hub. 
+
+1. take 3(jenkins,ansible,webserver) machines  and establish password less authentication between jenkins and ansible, jenkins and webserver and ansible and webserver.
+2. install publish over ssh plugin 
+3. managejenkins->configure system-->in publish over ssh section add all the ssh servers(jenkins,ansible,webserver).
+4. name:jenkins, hostname:ip of jenkins server, username: jenkins or root, click on advanced and select password authentication and give the password of jenkins and click on test configuration.
+5.in the same way u add ansible and webserver
+6. push the code to the github.
+7. now from git we have pushed all the code(3 files) to jenkins server now from jenkins server  we have to push to ansible server. 
+8. in build section select send files or execute commands over ssh (this will come only when u install publish over ssh plugin).
+9. ssh server
+    ----> name: jenkins
+    -----> exec command: rsync -avh /var/lib/jenkins/workspace/docker-webapp3/* root or jenkins@172.31.22.67:/opt(ip of ansible server)
+10. build the project and check the files in ansible server.
+11. now ansible will build the image and pushes to docker hub for that we need to add one more build step
+    ssh server
+    -----> name: ansible
+    -----> exec command: 
+           cd /opt
+           docker image build -t $JOB_NAME:v1.$BUILD_NO
+           docker image tag $JOB_NAME:v1.$BUILD_NO 656788/$JOB_NAME:v1.$BUILD_NO
+           docker image tag $JOB_NAME:v1.$BUILD_NO 656788/$JOB_NAME:latest
+           "before pushing the image to the docker hub you have to login" docker login
+           docker image push 656788/$JOB_NAME:latest 
+           docker image push 656788/$JOB_NAME:v1.$BUILD_NO
+           docker image rmi $JOB_NAME:v1.$BUILD_NO 656788/$JOB_NAME:v1.$BUILD_NO 656788/$JOB_NAME:latest
+12. now you have to deploy the image and run container in webserver from ansible for that write the playbook in ansible machine.
+13. In the /etc/ansible/hosts inventory create a group called webserver and mention the ip of the webserver.
+14. write ansible playbook in ansible server for creating the container or u can put it in the git.
+15. now go to jenkins add build step select send files or execute commands over ssh
+    ssh server
+    -------> name: ansible
+    -------> exec command:
+             ansible-playbook /opt/ansible.yml 
+16. lets integrate with git means use git webhook
+     in settings got git webhooks:
+
+     payload url: jenkins url/github-webhook
+     content type: application/json
+     secret: 
+         for generating the secret go to jenkins dashboard-->configure--add token -->click on generate.
+         copy the generated token and provide it in secret and click on add webhook.
+         webhook sends api request to jenkins shows tick mark indicating it is integrated with jenkins.
+17. now go to git and based on the new commit jenkins should run so make some changes in the docker file it automatically triggers.    
+
+ 

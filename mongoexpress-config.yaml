@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongoexpress-config
+  data:
+    database_url: mongodb-service
+
+
+    ### this is for accessing the database from frontend.
+    ### mongoexpress access the mongodb using the service name of mongo-db pod.
+    ### u need to inject this config map into mongo express deployment for accesing 
+    ### the mongodb from express.
